@@ -10,13 +10,15 @@ const Requests = () => {
 
   const reviewRequest = async (status, _id) => {
     try {
-      const res = axios.post(
+      const res = await axios.post(
         BASE_URL + "/request/review/" + status + "/" + _id,
         {},
         { withCredentials: true }
       );
       dispatch(removeRequest(_id));
-    } catch (err) {}
+    } catch (err) {
+      console.error(err.response?.data || err.message);
+    }
   };
 
   const fetchRequests = async () => {
@@ -49,7 +51,7 @@ const Requests = () => {
         return (
           <div
             key={_id}
-            className=" flex justify-between items-center m-4 p-4 rounded-lg bg-base-300  mx-auto"
+            className=" flex justify-between items-center m-4 p-4 rounded-lg bg-base-300 w-1/2 mx-auto"
           >
             <div>
               <img
@@ -68,13 +70,13 @@ const Requests = () => {
             <div>
               <button
                 className="btn btn-primary mx-2"
-                onClick={() => reviewRequest("rejected", request._id)}
+                onClick={() => reviewRequest("Rejected", request._id)}
               >
                 Reject
               </button>
               <button
                 className="btn btn-secondary mx-2"
-                onClick={() => reviewRequest("accepted", request._id)}
+                onClick={() => reviewRequest("Accepted", request._id)}
               >
                 Accept
               </button>
