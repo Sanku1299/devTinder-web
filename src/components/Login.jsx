@@ -5,15 +5,25 @@ import { addUser } from "../utils/userSlice";
 import { useNavigate } from "react-router-dom";
 import { BASE_URL } from "../utils/constants";
 
+const demoEmail = "sank@gmail.com";
+const demoPassword = "Sankalp@123";
+
 const Login = () => {
-  const [emailId, setEmailId] = useState("");
-  const [password, setPassword] = useState("");
+  const [emailId, setEmailId] = useState(demoEmail);
+  const [password, setPassword] = useState(demoPassword);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [isLoginForm, setIsLoginForm] = useState(true);
   const [error, setError] = useState("");
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  const switchForm = () => {
+    setEmailId(isLoginForm ? "" : demoEmail);
+    setPassword(isLoginForm ? "" : demoPassword);
+    setError("");
+    setIsLoginForm(!isLoginForm);
+  };
 
   const handleLogin = async () => {
     try {
@@ -115,7 +125,7 @@ const Login = () => {
 
           <p
             className="m-auto cursor-pointer py-2"
-            onClick={() => setIsLoginForm((value) => !value)}
+            onClick={switchForm}
           >
             {isLoginForm
               ? "New User? Signup Here"
