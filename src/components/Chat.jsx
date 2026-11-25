@@ -13,6 +13,7 @@ function Conversation({ targetUserId, userId }) {
   const socketRef = useRef(null);
   const bottom = useRef(null);
   const draftId = useRef(null);
+  const [partnerName, setPartnerName] = useState("");
   const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState("");
   const [status, setStatus] = useState("Connecting…");
@@ -24,6 +25,7 @@ function Conversation({ targetUserId, userId }) {
   useEffect(() => {
     const socket = createSocketConnection(targetUserId);
     socketRef.current = socket;
+    socket.on("conversation", ({ partnerName }) => setPartnerName(partnerName));
     socket.on("connect", () => {
       const connectionId = socket.id;
       setStatus("");
@@ -92,7 +94,7 @@ function Conversation({ targetUserId, userId }) {
   return (
     <section className="mx-auto my-5 flex h-[70vh] w-11/12 max-w-3xl flex-col rounded-lg border border-base-300 bg-base-100">
       <header className="border-b border-base-300 p-4">
-        <h1 className="text-xl font-bold">Chat</h1>
+        <h1 className="text-xl font-bold">{partnerName || "Chat"}</h1>
         {status && <p role="status">{status}</p>}
       </header>
       <div className="flex-1 overflow-y-auto p-4">
