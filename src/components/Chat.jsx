@@ -1,106 +1,127 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
-import { createSocketConnection } from "../utils/socket";
 import { useSelector } from "react-redux";
-import axios from "axios";
-import { BASE_URL } from "../utils/constants";
+import { createSocketConnection } from "../utils/socket";
 
-const Chat = () => {
-  const { targetUserId } = useParams();
+function mergeMessages(current, incoming) {
+  const unique = new Map(current.map((message) => [message._id, message]));
+  for (const message of incoming) unique.set(message._id, message);
+  return Array.from(unique.values()).sort((a, b) => a._id.localeCompare(b._id));
+}
+
+function Conversation({ targetUserId, userId }) {
+  const socketRef = useRef(null);
+  const bottom = useRef(null);
+  const draftId = useRef(null);
   const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState("");
-  const user = useSelector((store) => store.user);
-  const userId = user?._id;
-
-  const fetchChatMessages = async () => {
-    const chat = await axios.get(BASE_URL + "/chat/" + targetUserId, {
-      withCredentials: true,
-    });
-
-    console.log(chat.data.messages);
-
-    const chatMessages = chat?.data?.messages.map((msg) => {
-      const { senderId, text } = msg;
-      return {
-        firstName: senderId?.firstName,
-        lastName: senderId?.lastName,
-        text,
-      };
-    });
-    setMessages(chatMessages);
-  };
-  useEffect(() => {
-    fetchChatMessages();
-  }, []);
+  const [draft, setDraft] = useState("");
+  const [status, setStatus] = useState("Connecting…");
+  const [error, setError] = useState("");
+  const [more, setMore] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
-    if (!userId) {
-      return;
-    }
-    const socket = createSocketConnection();
-    // As soon as the page loaded, the socket connection is made and joinChat event is emitted
-    socket.emit("joinChat", {
-      firstName: user.firstName,
-      userId,
-      targetUserId,
+    const socket = createSocketConnection(targetUserId);
+    socketRef.current = socket;
+    socket.on("connect", () => {
+      const connectionId = socket.id;
+      setStatus("");
+      setError("");
+      setMessages([]);
+      setMore(false);
+      socket.timeout(15000).emit("history", null, (err, result) => {
+        if (!socket.connected || socket.id !== connectionId) return;
+        if (err || result.error) return setError(result?.error || "History timed out. Reopen this chat to retry.");
+        setMessages((current) => mergeMessages(current, result.messages));
+        setMore(result.more);
+      });
     });
-
-    socket.on("messageReceived", ({ firstName, lastName, text }) => {
-      console.log(firstName + " :  " + text);
-      setMessages((messages) => [...messages, { firstName, lastName, text }]);
+    socket.on("messageReceived", (message) => {
+      setMessages((current) => mergeMessages(current, [message]));
     });
-
+    socket.on("connect_error", (err) => {
+      setStatus(socket.active ? "Reconnecting…" : err.message);
+    });
+    socket.on("disconnect", (reason) => {
+      setStatus(reason === "io server disconnect" ? "Session ended. Log in again to chat." : "Reconnecting…");
+    });
+    socket.connect();
     return () => {
+      socketRef.current = null;
+      socket.removeAllListeners();
       socket.disconnect();
     };
-  }, [userId, targetUserId]);
+  }, [targetUserId, userId]);
 
-  const sendMessage = () => {
-    const socket = createSocketConnection();
-    socket.emit("sendMessage", {
-      firstName: user.firstName,
-      lastName: user.lastName,
-      userId,
-      targetUserId,
-      text: newMessage,
+  const newestId = messages.at(-1)?._id;
+  useEffect(() => {
+    if (newestId) bottom.current?.scrollIntoView({ block: "nearest" });
+  }, [newestId]);
+
+  function loadOlder() {
+    const socket = socketRef.current;
+    if (!socket?.connected || loadingOlder) return;
+    const connectionId = socket.id;
+    setLoadingOlder(true);
+    socket.timeout(15000).emit("history", messages[0]._id, (err, result) => {
+      setLoadingOlder(false);
+      if (socket.id !== connectionId) return;
+      if (err || result.error) return setError(result?.error || "Could not load older messages.");
+      setMessages((current) => mergeMessages(current, result.messages));
+      setMore(result.more);
     });
-    setNewMessage("");
-  };
+  }
+
+  function send(event) {
+    event.preventDefault();
+    const socket = socketRef.current;
+    if (!socket?.connected || sending || !draft.trim()) return;
+    setSending(true);
+    setError("");
+    draftId.current ??= crypto.randomUUID();
+    socket.timeout(15000).emit("sendMessage", { text: draft.trim(), clientId: draftId.current }, (err, result) => {
+      setSending(false);
+      if (err || result.error) return setError(result?.error || "Delivery unconfirmed. Retry to confirm.");
+      setMessages((current) => mergeMessages(current, [result.message]));
+      setDraft("");
+      draftId.current = null;
+    });
+  }
 
   return (
-    <div className="w-3/4 mx-auto border border-gray-600 m-5 h-[70vh] flex flex-col">
-      <h1 className="p-5 border-b border-gray-600">Chat</h1>
-      <div className="flex-1 overflow-scroll p-5">
-        {messages.map((msg, index) => {
-          return (
-            <div
-              key={index}
-              className={
-                "chat " +
-                (user.firstName === msg.firstName ? "chat-end" : "chat-start")
-              }
-            >
-              <div className="chat-header">
-                {`${msg.firstName}  ${msg.lastName}`}
-                <time className="text-xs opacity-50"> 2 hours ago</time>
-              </div>
-              <div className="chat-bubble">{msg.text}</div>
-              <div className="chat-footer opacity-50">Seen</div>
-            </div>
-          );
-        })}
+    <section className="mx-auto my-5 flex h-[70vh] w-11/12 max-w-3xl flex-col rounded-lg border border-base-300 bg-base-100">
+      <header className="border-b border-base-300 p-4">
+        <h1 className="text-xl font-bold">Chat</h1>
+        {status && <p role="status">{status}</p>}
+      </header>
+      <div className="flex-1 overflow-y-auto p-4">
+        {more && <button className="btn btn-sm" disabled={loadingOlder || !!status} onClick={loadOlder}>Load earlier messages</button>}
+        {messages.map((message) => (
+          <div key={message._id} className={"chat " + (message.senderId === userId ? "chat-end" : "chat-start")}>
+            <div className="chat-header">{message.senderName}</div>
+            <div className="chat-bubble whitespace-pre-wrap break-words">{message.text}</div>
+            <time className="chat-footer text-xs opacity-70" dateTime={message.createdAt}>
+              {new Date(message.createdAt).toLocaleString()}
+            </time>
+          </div>
+        ))}
+        <div ref={bottom} />
       </div>
-      <div className="p-5 border-t border-gray-600 flex items-center gap-2">
-        <input
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          className="flex-1 border border-gray-500 text-white rounded p-2"
-        ></input>
-        <button onClick={sendMessage} className="btn btn-secondary">
-          Send
-        </button>
-      </div>
-    </div>
+      {error && <p role="alert" className="px-4 text-error">{error}</p>}
+      <form onSubmit={send} className="flex gap-2 border-t border-base-300 p-4">
+        <input aria-label="Message" placeholder="Write a message" maxLength={2000} disabled={sending}
+          value={draft} onChange={(event) => { setDraft(event.target.value); draftId.current = null; }}
+          className="input input-bordered min-w-0 flex-1" />
+        <button className="btn btn-primary" disabled={!!status || sending || !draft.trim()}>Send</button>
+      </form>
+    </section>
   );
-};
-export default Chat;
+}
+
+export default function Chat() {
+  const { targetUserId } = useParams();
+  const userId = useSelector((store) => store.user?._id);
+  if (!userId) return null;
+  return <Conversation key={userId + targetUserId} userId={userId} targetUserId={targetUserId} />;
+}
