@@ -30,36 +30,34 @@ const Connections = () => {
   if (connections.length === 0) return <h1> No Connections Found</h1>;
 
   return (
-    <div className="text-center my-10">
-      <h1 className="text-bold text-white text-3xl">Connections</h1>
+    <div className="mx-auto my-10 w-full max-w-4xl space-y-4 px-4 sm:px-6">
+      <h1 className="text-center text-3xl font-bold text-white">Connections</h1>
 
       {connections.map((connection) => {
         const { _id, firstName, lastName, photoUrl, age, gender, about } =
           connection;
 
         return (
-          <div
+          <article
             key={_id}
-            className="flex m-4 p-4 rounded-lg bg-base-300 w-1/2 mx-auto"
+            className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-4 gap-y-3 rounded-lg bg-base-300 p-4 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center"
           >
-            <div>
-              <img
-                alt="photo"
-                className="w-20 h-20 rounded-full object-cover"
-                src={photoUrl}
-              />
-            </div>
-            <div className="text-left mx-4 ">
+            <img
+              alt=""
+              className="h-14 w-14 rounded-full object-cover sm:h-20 sm:w-20"
+              src={photoUrl}
+            />
+            <div className="min-w-0 break-words">
               <h2 className="font-bold text-xl">
                 {firstName + " " + lastName}
               </h2>
               {age && gender && <p>{age + ", " + gender}</p>}
               <p>{about}</p>
             </div>
-            <Link to={"/chat/" + _id}>
-              <button className="btn btn-primary">Chat</button>
+            <Link to={"/chat/" + _id} className="btn btn-primary col-start-2 justify-self-start sm:col-start-3">
+              Chat
             </Link>
-          </div>
+          </article>
         );
       })}
     </div>
