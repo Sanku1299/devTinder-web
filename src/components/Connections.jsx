@@ -40,23 +40,25 @@ const Connections = () => {
         return (
           <article
             key={_id}
-            className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-4 gap-y-3 rounded-lg bg-base-300 p-4 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center"
+            className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-4 rounded-lg bg-base-300 p-4 sm:items-center"
           >
             <img
               alt=""
               className="h-14 w-14 rounded-full object-cover sm:h-20 sm:w-20"
               src={photoUrl}
             />
-            <div className="min-w-0 break-words">
-              <h2 className="font-bold text-xl">
-                {firstName + " " + lastName}
-              </h2>
-              {age && gender && <p>{age + ", " + gender}</p>}
-              <p>{about}</p>
+            <div className="flex min-w-0 flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3">
+              <div className="min-w-0 max-w-full break-words">
+                <h2 className="font-bold text-xl">
+                  {firstName + " " + lastName}
+                </h2>
+                {age && gender && <p>{age + ", " + gender}</p>}
+                <p>{about}</p>
+              </div>
+              <Link to={"/chat/" + _id} className="btn btn-primary shrink-0">
+                Chat
+              </Link>
             </div>
-            <Link to={"/chat/" + _id} className="btn btn-primary col-start-2 justify-self-start sm:col-start-3">
-              Chat
-            </Link>
           </article>
         );
       })}
