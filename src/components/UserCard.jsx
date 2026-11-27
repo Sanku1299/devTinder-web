@@ -21,7 +21,7 @@ const UserCard = ({ user }) => {
   };
 
   return (
-    <div className="card bg-base-300 w-96 shadow-xl">
+    <div className="card bg-base-300 w-96 max-w-full shadow-xl">
       <figure>
         <img src={user.photoUrl} alt="photo" />
       </figure>
