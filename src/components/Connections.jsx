@@ -30,7 +30,7 @@ const Connections = () => {
   if (connections.length === 0) return <h1> No Connections Found</h1>;
 
   return (
-    <div className="mx-auto my-10 w-full max-w-4xl space-y-4 px-4 sm:px-6">
+    <div className="mx-auto my-10 w-full max-w-lg space-y-4 px-4 sm:w-fit">
       <h1 className="text-center text-3xl font-bold text-white">Connections</h1>
 
       {connections.map((connection) => {
@@ -40,7 +40,7 @@ const Connections = () => {
         return (
           <article
             key={_id}
-            className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-4 rounded-lg bg-base-300 p-4 sm:items-center"
+            className="grid max-w-full grid-cols-[auto_minmax(0,1fr)] items-start gap-x-4 rounded-lg bg-base-300 p-4 sm:w-fit sm:items-center"
           >
             <img
               alt=""
