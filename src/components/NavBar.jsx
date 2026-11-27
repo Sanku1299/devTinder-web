@@ -1,8 +1,15 @@
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import { BASE_URL } from "../utils/constants";
 import { removeUser } from "../utils/userSlice";
+
+const navLinks = [
+  { to: "/profile", label: "Profile" },
+  { to: "/connections", label: "Connections" },
+  { to: "/requests", label: "Requests" },
+  { to: "/premium", label: "Premium" },
+];
 
 const NavBar = () => {
   const user = useSelector((store) => store.user);
@@ -21,53 +28,31 @@ const NavBar = () => {
   };
 
   return (
-    <div className="navbar bg-base-300">
-      <div className="flex-1">
-        <Link to="/" className="btn btn-ghost text-xl">
-          👩‍💻 DevTinder
-        </Link>
-      </div>
+    <header className="flex flex-wrap items-center gap-x-4 gap-y-1 bg-base-300 px-3 py-2 sm:px-5">
+      <Link to="/" className="btn btn-ghost px-2 text-xl">
+        👩‍💻 DevTinder
+      </Link>
       {user && (
-        <div className="flex-none gap-2">
-          <div className="form-control">Welcome, {user.firstName}</div>
-          <div className="dropdown dropdown-end mx-5 flex">
-            <div
-              tabIndex={0}
-              role="button"
-              className="btn btn-ghost btn-circle avatar"
-            >
-              <div className="w-10 rounded-full">
-                <img alt="user photo" src={user.photoUrl} />
-              </div>
-            </div>
-            <ul
-              tabIndex={0}
-              className="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow"
-            >
-              <li>
-                <Link to="/profile" className="justify-between">
-                  Profile
-                  <span className="badge">New</span>
-                </Link>
-              </li>
-              <li>
-                <Link to="/connections">Connections</Link>
-              </li>
-
-              <li>
-                <Link to="/requests">Requests</Link>
-              </li>
-              <li>
-                <Link to="/premium">Premium</Link>
-              </li>
-              <li>
-                <a onClick={handleLogout}>Logout</a>
-              </li>
-            </ul>
+        <>
+          <nav aria-label="Main navigation" className="order-last flex w-full flex-wrap gap-1 lg:order-none lg:w-auto">
+            {navLinks.map(({ to, label }) => (
+              <NavLink key={to} to={to} className={({ isActive }) =>
+                `btn btn-ghost btn-sm ${isActive ? "btn-active" : ""}`
+              }>
+                {label}
+              </NavLink>
+            ))}
+          </nav>
+          <div className="ml-auto flex items-center gap-2">
+            <span className="hidden max-w-40 truncate sm:inline">Welcome, {user.firstName}</span>
+            <img src={user.photoUrl} alt="" className="h-8 w-8 rounded-full object-cover" />
+            <button type="button" onClick={handleLogout} className="btn btn-ghost btn-sm">
+              Logout
+            </button>
           </div>
-        </div>
+        </>
       )}
-    </div>
+    </header>
   );
 };
 export default NavBar;
